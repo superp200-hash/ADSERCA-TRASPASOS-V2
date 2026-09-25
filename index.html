@@ -20,11 +20,12 @@ button.selected{background:#17202a;color:#fff;border-color:#17202a}
 @media(max-width:650px){.pickers{grid-template-columns:minmax(0,1fr) 34px minmax(0,1fr);gap:6px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 body{position:relative;min-height:100vh;overflow-x:hidden}
-body::before{content:"";position:fixed;inset:0;background:url("logo-serca.png") center center/500px 500px no-repeat;opacity:.13;pointer-events:none;z-index:0}
+#serca-bg{position:fixed;inset:0;background:url("logo-serca.png") center center/500px 500px no-repeat;opacity:.13;pointer-events:none;z-index:0}
 main{position:relative;z-index:1}
 </style>
 </head>
 <body>
+<div id="serca-bg" aria-hidden="true"></div>
 <main>
 <section class="card">
 <h1>📦 COMPROBADOR TRASPASOS <span class="version-badge">V2</span></h1>
