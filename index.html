@@ -18,6 +18,10 @@ button.selected{background:#17202a;color:#fff;border-color:#17202a}
 .testbox{margin-top:16px}.testbox summary{cursor:pointer;font-weight:800}.incident-list{display:flex;flex-direction:column;gap:8px;margin-top:10px}.incident-item{padding:10px 12px;background:#fff5df;border-left:4px solid #f59e0b;border-radius:8px}.small{font-size:13px;color:#667085}
 @media(max-width:900px){main{padding:8px}.grid{gap:6px}}
 @media(max-width:650px){.pickers{grid-template-columns:minmax(0,1fr) 34px minmax(0,1fr);gap:6px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+body{position:relative;min-height:100vh;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;background:url("logo-serca.png") center center/420px 420px no-repeat;opacity:.07;pointer-events:none;z-index:0}
+main{position:relative;z-index:1}
 </style>
 </head>
 <body>
@@ -37,7 +41,7 @@ button.selected{background:#17202a;color:#fff;border-color:#17202a}
 </section>
 </main>
 <script>
-const STORES=["ATALAYAS","ALICANTE","ALICANTE NORTE","TORREVIEJA","HORADADA","MUCHAMIEL","SAN VICENTE","ORIHUELA","ONDARA","DENIA","BENIDORM","CALPE","ALMANSA","ALBACETE","HELLIN","VILLARROBLEDO","LA RODA","CUENCA","TARANCON","IBI","ALCOY","ASPE","ELDA","VILLENA","ELCHE CARRUS","ELCHE SECTOR"];
+const STORES=["ATALAYAS","ALICANTE","BENIDORM","TORREVIEJA","VILLENA","ORIHUELA","ALCOY","ALBACETE","ELDA","MUCHAMIEL","ELCHE CARRUS","SAN VICENTE","ELCHE SECTOR","ONDARA","ALICANTE NORTE","ALMANSA","CUENCA","VILLARROBLEDO","TARANCON","CALPE","HORADADA","ASPE","DENIA","LA RODA","HELLIN","IBI"];
 const DISPLAY_NAMES={"ATALAYAS":"00 ATALAYAS","ALICANTE":"01 ALICANTE","BENIDORM":"03 BENIDORM","TORREVIEJA":"04 TORREVIEJA","VILLENA":"05 VILLENA","ORIHUELA":"06 ORIHUELA","ALCOY":"07 ALCOY","ALBACETE":"08 ALBACETE","ELDA":"09 ELDA","MUCHAMIEL":"10 MUCHAMIEL","ELCHE CARRUS":"11 ELCHE CARRUS","SAN VICENTE":"12 SAN VICENTE","ELCHE SECTOR":"14 ELCHE SECTOR","ONDARA":"15 ONDARA","ALICANTE NORTE":"16 ALICANTE NORTE","ALMANSA":"17 ALMANSA","CUENCA":"18 CUENCA","VILLARROBLEDO":"19 VILLARROBLEDO","TARANCON":"20 TARANCON","CALPE":"21 CALPE","HORADADA":"22 HORADADA","ASPE":"24 ASPE","DENIA":"26 DENIA","LA RODA":"27 LA RODA","HELLIN":"28 HELLIN","IBI":"30 IBI"};
 // SOLO RUTAS BASE V2 BLINDADAS. Las combinaciones se calculan en tiempo de consulta.
 const LEGS=[
