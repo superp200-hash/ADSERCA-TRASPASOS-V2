@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>COMPROBADOR TRASPASOS V2</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f3f5f7;color:#17202a;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+main{width:100%;max-width:none;margin:auto;padding:10px 12px}.card{background:rgba(255,255,255,.88);border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:0 4px 18px rgba(0,0,0,.07)}
+h1{margin:0 0 5px;font-size:25px}.muted{color:#667085}.clock{font-size:18px;font-weight:700;margin:12px 0}
+.pickers{display:grid;grid-template-columns:minmax(0,1fr) 44px minmax(0,1fr);gap:10px;align-items:start;width:100%}.arrow{font-size:34px;font-weight:800;text-align:center;margin-top:60px}
+h2{font-size:14px;margin:8px 0 9px}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+button{min-height:48px;border-radius:11px;border:1px solid #d0d5dd;background:#fff;font-weight:700;padding:8px;cursor:pointer}
+button.selected{background:#17202a;color:#fff;border-color:#17202a}
+.result{margin-top:16px;padding:15px;border-radius:14px;background:rgba(247,248,250,.82)}.big{font-size:25px;font-weight:800;margin-bottom:10px}
+.warn{margin-top:12px;padding:12px;border-left:4px solid #f59e0b;background:#fff5df;border-radius:8px}.error{margin-top:12px;padding:12px;border-left:4px solid #d92d20;background:#fff0ef;border-radius:8px}
+.steps{margin-top:10px}.step{padding:9px 0;border-bottom:1px solid #e7e9ec}.step:last-child{border:0}
+.chain{font-weight:800;font-size:17px;line-height:1.5}.meta{font-size:14px;color:#667085;margin-top:4px}.incident{margin-top:10px;padding:10px 12px;border-left:4px solid #d92d20;background:#fff0ef;border-radius:8px;font-size:14px}
+.testbox{margin-top:16px}.testbox summary{cursor:pointer;font-weight:800}.incident-list{display:flex;flex-direction:column;gap:8px;margin-top:10px}.incident-item{padding:10px 12px;background:rgba(255,245,223,.84);border-left:4px solid #f59e0b;border-radius:8px}.small{font-size:13px;color:#667085}
+@media(max-width:900px){main{padding:8px}.grid{gap:6px}}
+@media(max-width:650px){.pickers{grid-template-columns:minmax(0,1fr) 34px minmax(0,1fr);gap:6px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+body{position:relative;min-height:100vh;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;background:url("logo-serca.png") center center/420px 420px no-repeat;opacity:.065;pointer-events:none;z-index:0}
+main{position:relative;z-index:1}
+</style>
+</head>
+<body>
+<main>
+<section class="card">
+<h1>📦 COMPROBADOR TRASPASOS <span class="version-badge">V2</span></h1>
+<div class="clock">🕐 <span id="clock"></span></div>
+<div class="pickers">
+<div><h2>ORIGEN</h2><div id="orig" class="grid"></div></div>
+<div class="arrow">→</div>
+<div><h2>DESTINO</h2><div id="dest" class="grid"></div></div>
+</div>
+<div id="result"></div>
+</section>
+<section class="card testbox">
+<details><summary>⚠️ INCIDENCIAS V2</summary><div id="incidents" class="incident-list"></div></details>
+</section>
+</main>
+<script>
+const STORES=["ATALAYAS","ALICANTE","BENIDORM","TORREVIEJA","VILLENA","ORIHUELA","ALCOY","ALBACETE","ELDA","MUCHAMIEL","ELCHE CARRUS","SAN VICENTE","ELCHE SECTOR","ONDARA","ALICANTE NORTE","ALMANSA","CUENCA","VILLARROBLEDO","TARANCON","CALPE","HORADADA","ASPE","DENIA","LA RODA","HELLIN","IBI"];
+const DISPLAY_NAMES={"ATALAYAS":"00 ATALAYAS","ALICANTE":"01 ALICANTE","BENIDORM":"03 BENIDORM","TORREVIEJA":"04 TORREVIEJA","VILLENA":"05 VILLENA","ORIHUELA":"06 ORIHUELA","ALCOY":"07 ALCOY","ALBACETE":"08 ALBACETE","ELDA":"09 ELDA","MUCHAMIEL":"10 MUCHAMIEL","ELCHE CARRUS":"11 ELCHE CARRUS","SAN VICENTE":"12 SAN VICENTE","ELCHE SECTOR":"14 ELCHE SECTOR","ONDARA":"15 ONDARA","ALICANTE NORTE":"16 ALICANTE NORTE","ALMANSA":"17 ALMANSA","CUENCA":"18 CUENCA","VILLARROBLEDO":"19 VILLARROBLEDO","TARANCON":"20 TARANCON","CALPE":"21 CALPE","HORADADA":"22 HORADADA","ASPE":"24 ASPE","DENIA":"26 DENIA","LA RODA":"27 LA RODA","HELLIN":"28 HELLIN","IBI":"30 IBI"};
+// SOLO RUTAS BASE V2 BLINDADAS. Las combinaciones se calculan en tiempo de consulta.
+const LEGS=[
+["R01","ATALAYAS","ALICANTE","07:30","08:05","07:30"],["R01","ALICANTE","ALICANTE NORTE","08:05","08:45","19:15 D/A"],["R01","ALICANTE NORTE","ALICANTE","08:45","09:45","08:35"],["R01","ALICANTE","ATALAYAS","09:45","10:00","09:30"],["R01","ATALAYAS","ALICANTE","10:50","11:20","10:50"],["R01","ALICANTE","ALICANTE NORTE","11:20","11:50","11:00"],["R01","ALICANTE NORTE","ALICANTE","11:50","12:45","11:40"],["R01","ALICANTE","ATALAYAS","12:45","13:00","12:30"],["R01","ATALAYAS","ALICANTE","15:00","15:30","15:00"],["R01","ALICANTE","ALICANTE NORTE","15:30","16:00","13:50"],["R01","ALICANTE NORTE","ALICANTE","16:00","16:45","13:50"],["R01","ALICANTE","ATALAYAS","16:45","17:00","16:25"],
+["R02","ATALAYAS","SAN VICENTE","07:00","07:40","07:00"],["R02","SAN VICENTE","MUCHAMIEL","07:40","08:30","19:15 D/A"],["R02","MUCHAMIEL","SAN VICENTE","08:30","09:30","19:15 D/A"],["R02","SAN VICENTE","ATALAYAS","09:30","10:00","09:15"],["R02","ATALAYAS","SAN VICENTE","10:30","10:30","10:30"],["R02","SAN VICENTE","MUCHAMIEL","10:30","11:30","10:25"],["R02","MUCHAMIEL","ATALAYAS","11:30","11:45","11:15"],["R02","ATALAYAS","SAN VICENTE","14:50","15:20","14:50"],["R02","SAN VICENTE","MUCHAMIEL","15:20","16:00","13:15"],["R02","MUCHAMIEL","SAN VICENTE","16:00","16:20","13:15"],["R02","SAN VICENTE","ATALAYAS","16:20","17:00","16:15"],["R02","SAN VICENTE","ATALAYAS","10:30","11:45","10:25"],
+["R03","ATALAYAS","TORREVIEJA","07:00","08:20","07:00"],["R03","TORREVIEJA","ATALAYAS","08:20","09:40","19:15 D/A"],["R03","ATALAYAS","TORREVIEJA","10:30","11:40","10:30"],["R03","TORREVIEJA","ATALAYAS","11:40","12:40","11:30"],["R03","ATALAYAS","TORREVIEJA","14:00","15:15","14:50"],["R03","TORREVIEJA","ATALAYAS","15:15","16:40","13:15"],
+["R22","HORADADA","TORREVIEJA","08:00","08:15","19:15 D/A"],["R22","TORREVIEJA","HORADADA","08:15","09:10","08:10"],["R22","HORADADA","TORREVIEJA","10:30","11:00","10:15"],["R22","TORREVIEJA","HORADADA","11:00","11:30","10:50"],["R22","HORADADA","TORREVIEJA","15:00","15:10","13:15"],["R22","TORREVIEJA","HORADADA","15:10","16:00","13:15"],
+["R05","ATALAYAS","ORIHUELA","07:00","08:50","07:00"],["R05","ORIHUELA","ATALAYAS","08:50","09:30","08:40"],["R05","ATALAYAS","ORIHUELA","10:30","11:45","10:30"],["R05","ORIHUELA","ATALAYAS","11:45","12:30","11:30"],["R05","ATALAYAS","ORIHUELA","14:00","15:45","14:00"],["R05","ORIHUELA","ATALAYAS","15:45","16:40","13:30"],
+["R06","ATALAYAS","ONDARA","06:00","07:20","06:00"],["R06","ONDARA","ATALAYAS","07:20","09:15","19:15 D/A"],
+["R07","ATALAYAS","ALMANSA","04:15","05:30","04:15"],["R07","ALMANSA","ALBACETE","05:30","07:15","19:15 D/A"],["R07","ALBACETE","ALMANSA","07:15","08:25","19:15 D/A"],["R07","ALMANSA","ATALAYAS","08:25","10:15","19:15 D/A"],["R07","ATALAYAS","ALMANSA","13:20","14:20","13:20"],["R07","ALMANSA","ALBACETE","14:20","15:25","13:30"],["R07","ALBACETE","ALMANSA","15:25","16:15","13:30"],["R07","ALMANSA","ATALAYAS","16:15","17:30","13:15"],
+["R08","ATALAYAS","IBI","07:15","08:00","07:15"],["R08","IBI","ALCOY","08:00","08:50","19:15 D/A"],["R08","ALCOY","IBI","08:50","09:15","08:40"],["R08","IBI","ATALAYAS","09:15","09:30","09:00"],["R08","ATALAYAS","IBI","10:30","11:25","10:30"],["R08","ATALAYAS","IBI","14:00","14:45","14:00"],["R08","IBI","ALCOY","14:45","15:45","13:15"],["R08","ALCOY","IBI","15:45","16:15","13:15"],["R08","IBI","ATALAYAS","16:15","16:40","16:05"],
+["R09","ATALAYAS","ASPE","05:40","06:20","05:40"],["R09","ASPE","ELDA","06:20","06:50","19:15 D/A"],["R09","ELDA","VILLENA","06:50","08:15","19:15 D/A"],["R09","VILLENA","ATALAYAS","08:15","09:00","19:15 D/A"],["R09","ATALAYAS","ASPE","10:30","11:00","10:30"],["R09","ASPE","ELDA","11:00","11:25","10:30"],["R09","ELDA","VILLENA","11:25","11:55","10:45"],["R09","VILLENA","ATALAYAS","11:55","12:10","11:30"],["R09","ATALAYAS","ASPE","13:20","13:45","13:20"],["R09","ASPE","ELDA","13:45","14:15","13:30"],["R09","ELDA","VILLENA","14:15","15:00","13:45"],["R09","VILLENA","ATALAYAS","15:00","16:00","13:15"],
+["R10","ATALAYAS","BENIDORM","05:45","06:40","05:45"],["R10","BENIDORM","CALPE","06:40","07:40","19:15 D/A"],["R10","ATALAYAS","BENIDORM","10:30","11:10","10:30"],["R10","BENIDORM","CALPE","11:10","12:15","11:00"],["R10","ATALAYAS","BENIDORM","13:20","14:05","13:20"],["R10","BENIDORM","CALPE","14:05","14:35","13:30"],["R10","CALPE","ONDARA","14:35","15:15","13:30"],["R10","ONDARA","BENIDORM","19:05","20:00","18:50"],["R10","BENIDORM","ATALAYAS","20:00","21:15","19:15"],
+["R11","HELLIN","ALBACETE","13:45","14:30","13:30"],["R11","ALBACETE","ATALAYAS","14:30","17:30","13:30"],["R11","HELLIN","ALBACETE","17:15","18:00","17:00"],["R11","ALBACETE","ATALAYAS","18:00","10:15 D/S","19:15"],
+["R12","VILLARROBLEDO","ALBACETE","11:15","12:00","11:00"],["R12","VILLARROBLEDO","ALBACETE","17:15","18:00","17:00"],
+["R13","LA RODA","VILLARROBLEDO","10:15","10:40","10:00"],["R13","LA RODA","VILLARROBLEDO","16:15","16:50","13:15"],
+["R14","CUENCA","ALBACETE","09:45","12:00","09:30"],["R14","CUENCA","ALBACETE","17:15","18:30","17:00"],
+["R15","TARANCON","ALBACETE","11:30","19:00","11:25"],["R15","TARANCON","ALBACETE","18:30","11:30 D/S","18:25"],
+["R16","DENIA","ONDARA","11:50","12:00","11:45"],["R16","DENIA","ONDARA","17:35","17:45","17:30"],
+["R04B","ELCHE SECTOR","ELCHE CARRUS","10:15","10:30","10:15"],["R04B","ELCHE SECTOR","ELCHE CARRUS","13:00","16:00","13:00"],["R04B","ELCHE SECTOR","ELCHE CARRUS","17:30","18:00","17:30"],["R04B","ELCHE CARRUS","ELCHE SECTOR","17:30","18:00","17:30"]
+];
+const INCIDENTS=[
+{route:"R04B",label:"11 ELCHE CARRUS ↔ 14 ELCHE SECTOR",detail:"INCIDENCIA — recorrido exclusivo 11 ↔ 14; servicios incompletos por sentido."},
+{route:"R08",label:"30 IBI → ALCOY / 30 IBI → 00 ATALAYAS",detail:"INCIDENCIA — servicio de las 11:25 marcado para comprobación; no se usa en el cálculo activo."},
+{route:"R11",label:"00 ATALAYAS → 28 HELLIN",detail:"INCIDENCIA — falta el tramo 00 → HELLIN en la fuente."},
+{route:"R12",label:"19 VILLARROBLEDO",detail:"INCIDENCIA — solo existe comunicación VILLARROBLEDO → ALBACETE → 00; falta el sentido de retorno."},
+{route:"R13",label:"27 LA RODA",detail:"INCIDENCIA — solo existe LA RODA → VILLARROBLEDO → ALBACETE → 00; falta el sentido de retorno."},
+{route:"R14",label:"18 CUENCA",detail:"INCIDENCIA — solo existe CUENCA → ALBACETE → 00; falta el sentido de retorno."},
+{route:"R15",label:"20 TARANCON",detail:"INCIDENCIA — solo existe TARANCON → ALBACETE → 00; falta el sentido de retorno."},
+{route:"R16",label:"26 DENIA ↔ 15 ONDARA",detail:"INCIDENCIA — existe DENIA → ONDARA; falta ONDARA → DENIA."},
+{route:"R10",label:"21 CALPE → 15 ONDARA / 15 ONDARA → 03 BENIDORM / 03 BENIDORM → 00 ATALAYAS",detail:"INCIDENCIA — los huecos X de la fuente no se incorporan."}
+];
+let origin="",destination="";
+function min(s){let m=String(s).match(/(\d{1,2}):(\d{2})/);return m?+m[1]*60+ +m[2]:null}
+function fmt(x){x=((x%1440)+1440)%1440;return String(Math.floor(x/60)).padStart(2,"0")+":"+String(x%60).padStart(2,"0")}
+function edge(e, earliest){const dep=min(e[3]),arr=min(e[4]);let base=Math.floor(earliest/1440)*1440;let depAbs=base+dep;if(depAbs<earliest)depAbs+=1440;let dur=((arr-dep)+1440)%1440;let arrAbs=depAbs+dur; if(String(e[4]).includes("D/S")) arrAbs=Math.max(arrAbs,depAbs)+0; return {dep:depAbs,arr:arrAbs,edge:e}}
+function findEarliest(from,to,start,firstLeg){
+  const dist={}; const prev={}; const used=new Set(); STORES.forEach(s=>dist[s]=Infinity);
+  dist[from]=start;
+  while(true){let u=null,b=Infinity;for(const s of STORES){if(!used.has(s)&&dist[s]<b){b=dist[s];u=s}}if(u===null||u===to)break;used.add(u);
+    for(const e of LEGS){if(e[1]!==u)continue; if(firstLeg && e!==firstLeg)continue; const z=edge(e,dist[u]); if(z.dep<dist[u])continue; if(z.arr<dist[e[2]]){dist[e[2]]=z.arr;prev[e[2]]={store:u,edge:e,dep:z.dep,arr:z.arr}}}
+    if(firstLeg) firstLeg=null;
+  }
+  if(from===to)return {legs:[],arr:start}; if(!prev[to])return null;
+  const legs=[];let cur=to;while(cur!==from){const p=prev[cur];if(!p)return null;legs.unshift(p);cur=p.store}return {legs,arr:dist[to]};
+}
+function enumerate(from,to){
+  if(from===to)return {same:true,paths:[]};
+  const firsts=LEGS.filter(e=>e[1]===from).sort((a,b)=>min(a[3])-min(b[3]));
+  const byDeparture=new Map();
+  for(const f of firsts){
+    const start=min(f[3]);
+    const p=findEarliest(from,to,start,f);
+    if(!p)continue;
+    const dep=p.legs[0].dep;
+    const prev=byDeparture.get(dep);
+    // Si dos cadenas parten a la misma hora y llegan igual, conservamos la de menos tramos.
+    if(!prev || p.legs.length<prev.legs.length) byDeparture.set(dep,p);
+  }
+  const paths=[...byDeparture.values()].sort((a,b)=>a.legs[0].dep-b.legs[0].dep);
+  return {same:false,paths};
+}
+function chainText(p){return p.legs.map(x=>fmt(x.dep)+(Math.floor(x.dep/1440)>0?" D/S":"")+" → "+fmt(x.arr)+(Math.floor(x.arr/1440)>0?" D/S":"")).join("  |  ")}
+function routeText(p){return p.legs.map(x=>DISPLAY_NAMES[x.edge[1]]||x.edge[1]).concat(DISPLAY_NAMES[p.legs[p.legs.length-1].edge[2]]||p.legs[p.legs.length-1].edge[2]).join(" → ")}
+function calc(){const out=document.querySelector('#result'); if(!origin||!destination){out.innerHTML='';return} if(origin===destination){out.innerHTML='<div class="result"><div class="big">Mismo almacén.</div><div>No se genera combinación.</div></div>';return}
+  const r=enumerate(origin,destination); if(!r.paths.length){out.innerHTML='<div class="result"><div class="big">🔴 Sin cadena encontrada</div><div class="incident">⚠️ No existe una cadena temporal disponible con los datos V2 cargados.</div></div>';return}
+  let s='<div class="result"><div class="big">🟢 '+DISPLAY_NAMES[origin]+' → '+DISPLAY_NAMES[destination]+'</div><div class="meta">'+r.paths.length+' cadena(s) encontrada(s) a partir de los servicios de origen.</div><div class="steps">';
+  r.paths.forEach((p,i)=>{const first=p.legs[0].edge,last=p.legs[p.legs.length-1].edge; const ds=Math.floor(p.arr/1440)>0?' D/S':''; s+='<div class="step"><b>Viaje '+(i+1)+'</b><div class="chain">'+chainText(p)+'</div><div class="meta">'+routeText(p)+'<br>H.PEDIDO: <b>'+first[5]+'</b> · Llegada: <b>'+fmt(p.arr)+ds+'</b></div></div>'});
+  s+='</div></div>';out.innerHTML=s;
+}
+function buttons(id,type){const box=document.querySelector(id);STORES.forEach(s=>{const b=document.createElement('button');b.type='button';b.dataset.store=s;b.textContent=DISPLAY_NAMES[s]||s;b.onclick=()=>{if(type==='o')origin=s;else destination=s;mark();calc()};box.appendChild(b)})}
+function mark(){document.querySelectorAll('#orig button').forEach(b=>b.classList.toggle('selected',b.dataset.store===origin));document.querySelectorAll('#dest button').forEach(b=>b.classList.toggle('selected',b.dataset.store===destination))}
+function clock(){const d=new Date();document.querySelector('#clock').textContent=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
+function renderIncidents(){document.querySelector('#incidents').innerHTML=INCIDENTS.map(x=>'<div class="incident-item"><b>'+x.label+'</b><div class="small">'+x.detail+'</div></div>').join('')}
+buttons('#orig','o');buttons('#dest','d');clock();setInterval(clock,1000);renderIncidents();
+</script>
+</body></html>
