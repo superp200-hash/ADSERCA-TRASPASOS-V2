@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TRASPASOS TIENDA V2 · RUTA 17</title>
+<title>TRASPASOS TIENDA V3</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#f3f5f7;color:#17202a;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
 main{width:100%;max-width:none;margin:auto;padding:10px 12px}.card{background:#fff;border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:0 4px 18px rgba(0,0,0,.07)}
@@ -24,9 +24,8 @@ button.selected{background:#17202a;color:#fff;border-color:#17202a}
 <body>
 <main>
 <section class="card">
-<h1>📦 COMPROBADOR TRASPASOS <span class="version-badge">V2</span></h1>
-<div class="version-line" style="font-size:13px;font-weight:700;margin:6px 0 10px;color:#344054">VERSIÓN DEL PROGRAMA: V2 · RUTA 17 INCORPORADA</div>
-<div class="warn"><b>⚠️ Restricción de horario:</b> JÁVEA cierra a las 18:00. ONDARA no tiene esta restricción. Ruta cerrada exclusivamente entre 25 JÁVEA y 15 ONDARA. La conexión con 00 ATALAYAS se realiza a través de 15 ONDARA.</div>
+<h1>📦 COMPROBADOR TRASPASOS <span class="version-badge">V2.30</span></h1>
+<div id="store-alerts" aria-live="polite"></div>
 <div class="clock">🕐 <span id="clock"></span></div>
 <div class="pickers">
 <div><h2>ORIGEN</h2><div id="orig" class="grid"></div></div>
@@ -43,7 +42,7 @@ button.selected{background:#17202a;color:#fff;border-color:#17202a}
 const STORES=["ATALAYAS","ALICANTE","BENIDORM","TORREVIEJA","VILLENA","ORIHUELA","ALCOY","ALBACETE","ELDA","MUCHAMIEL","ELCHE CARRUS","SAN VICENTE","ELCHE SECTOR","ONDARA","ALICANTE NORTE","ALMANSA","CUENCA","VILLARROBLEDO","TARANCON","CALPE","HORADADA","ASPE","JAVEA","DENIA","LA RODA","HELLIN","IBI"];
 const DISPLAY_NAMES={"ATALAYAS":"00 ATALAYAS","ALICANTE":"01 ALICANTE","BENIDORM":"03 BENIDORM","TORREVIEJA":"04 TORREVIEJA","VILLENA":"05 VILLENA","ORIHUELA":"06 ORIHUELA","ALCOY":"07 ALCOY","ALBACETE":"08 ALBACETE","ELDA":"09 ELDA","MUCHAMIEL":"10 MUCHAMIEL","ELCHE CARRUS":"11 ELCHE CARRUS","SAN VICENTE":"12 SAN VICENTE","ELCHE SECTOR":"14 ELCHE SECTOR","ONDARA":"15 ONDARA","ALICANTE NORTE":"16 ALICANTE NORTE","ALMANSA":"17 ALMANSA","CUENCA":"18 CUENCA","VILLARROBLEDO":"19 VILLARROBLEDO","TARANCON":"20 TARANCON","CALPE":"21 CALPE","HORADADA":"22 HORADADA","ASPE":"24 ASPE","JAVEA":"25 JÁVEA","DENIA":"26 DENIA","LA RODA":"27 LA RODA","HELLIN":"28 HELLIN","IBI":"30 IBI"};
 // Rutas base V2. R17 añadida desde la tabla aprobada de JÁVEA ↔ ONDARA.
- // La restricción de cierre de JÁVEA (18:00) se muestra como aviso visible.
+ // El cierre de JÁVEA solo se avisa cuando JÁVEA está seleccionado.
 const LEGS=[
 ["R01","ATALAYAS","ALICANTE","07:30","08:05","07:30"],["R01","ALICANTE","ALICANTE NORTE","08:05","08:45","19:15 D/A"],["R01","ALICANTE NORTE","ALICANTE","08:45","09:45","08:35"],["R01","ALICANTE","ATALAYAS","09:45","10:00","09:30"],["R01","ATALAYAS","ALICANTE","10:50","11:20","10:50"],["R01","ALICANTE","ALICANTE NORTE","11:20","11:50","11:00"],["R01","ALICANTE NORTE","ALICANTE","11:50","12:45","11:40"],["R01","ALICANTE","ATALAYAS","12:45","13:00","12:30"],["R01","ATALAYAS","ALICANTE","15:00","15:30","15:00"],["R01","ALICANTE","ALICANTE NORTE","15:30","16:00","13:50"],["R01","ALICANTE NORTE","ALICANTE","16:00","16:45","13:50"],["R01","ALICANTE","ATALAYAS","16:45","17:00","16:25"],
 ["R02","ATALAYAS","SAN VICENTE","07:00","07:40","07:00"],["R02","SAN VICENTE","MUCHAMIEL","07:40","08:30","19:15 D/A"],["R02","MUCHAMIEL","SAN VICENTE","08:30","09:30","19:15 D/A"],["R02","SAN VICENTE","ATALAYAS","09:30","10:00","09:15"],["R02","ATALAYAS","SAN VICENTE","10:30","10:30","10:30"],["R02","SAN VICENTE","MUCHAMIEL","10:30","11:30","10:25"],["R02","MUCHAMIEL","ATALAYAS","11:30","11:45","11:15"],["R02","ATALAYAS","SAN VICENTE","14:50","15:20","14:50"],["R02","SAN VICENTE","MUCHAMIEL","15:20","16:00","13:15"],["R02","MUCHAMIEL","SAN VICENTE","16:00","16:20","13:15"],["R02","SAN VICENTE","ATALAYAS","16:20","17:00","16:15"],["R02","SAN VICENTE","ATALAYAS","10:30","11:45","10:25"],
@@ -64,19 +63,21 @@ const LEGS=[
 ["R17","JAVEA","ONDARA","11:15","11:35","11:00"],["R17","ONDARA","JAVEA","11:35","11:55","11:25"],
 ["R17","JAVEA","ONDARA","15:00","15:20","13:20"],["R17","ONDARA","JAVEA","15:20","15:40","13:20"],
 ["R17","JAVEA","ONDARA","17:00","17:20","16:50"],["R17","ONDARA","JAVEA","17:20","17:30","17:10"],
+["R17B","JAVEA","ELCHE SECTOR","08:35","13:00","07:50 D/S"],["R17B","JAVEA","ELCHE SECTOR","16:15","18:00","07:50 D/S"],
+["R17C","ELCHE SECTOR","JAVEA","07:50","16:15","07:50"],["R17C","ELCHE SECTOR","JAVEA","11:10","16:15","11:10"],["R17C","ELCHE SECTOR","JAVEA","14:50","08:35","14:50 D/S"],
 ["R04B","ELCHE SECTOR","ELCHE CARRUS","10:15","10:30","10:15"],["R04B","ELCHE SECTOR","ELCHE CARRUS","13:00","16:00","13:00"],["R04B","ELCHE SECTOR","ELCHE CARRUS","17:30","18:00","17:30"],["R04B","ELCHE CARRUS","ELCHE SECTOR","17:30","18:00","17:30"]
 ];
 const INCIDENTS=[
-{route:"R04B",label:"11 ELCHE CARRUS ↔ 14 ELCHE SECTOR",detail:"INCIDENCIA — recorrido exclusivo 11 ↔ 14; servicios incompletos por sentido."},
-{route:"R08",label:"30 IBI → ALCOY / 30 IBI → 00 ATALAYAS",detail:"INCIDENCIA — servicio de las 11:25 marcado para comprobación; no se usa en el cálculo activo."},
-{route:"R11",label:"00 ATALAYAS → 28 HELLIN",detail:"INCIDENCIA — falta el tramo 00 → HELLIN en la fuente."},
-{route:"R12",label:"19 VILLARROBLEDO",detail:"INCIDENCIA — solo existe comunicación VILLARROBLEDO → ALBACETE → 00; falta el sentido de retorno."},
-{route:"R13",label:"27 LA RODA",detail:"INCIDENCIA — solo existe LA RODA → VILLARROBLEDO → ALBACETE → 00; falta el sentido de retorno."},
-{route:"R14",label:"18 CUENCA",detail:"INCIDENCIA — solo existe CUENCA → ALBACETE → 00; falta el sentido de retorno."},
-{route:"R15",label:"20 TARANCON",detail:"INCIDENCIA — solo existe TARANCON → ALBACETE → 00; falta el sentido de retorno."},
-{route:"R16",label:"26 DENIA ↔ 15 ONDARA",detail:"INCIDENCIA — existe DENIA → ONDARA; falta ONDARA → DENIA."},
-{route:"R10",label:"21 CALPE → 15 ONDARA / 15 ONDARA → 03 BENIDORM / 03 BENIDORM → 00 ATALAYAS",detail:"INCIDENCIA — los huecos X de la fuente no se incorporan."},
- {route:"R17",label:"25 JÁVEA ↔ 15 ONDARA",detail:"Ruta cerrada entre ambos almacenes. JÁVEA cierra a las 18:00; ONDARA no tiene esa restricción. La conexión con 00 ATALAYAS se realiza a través de 15 ONDARA."}
+{route:"R04B",stores:["ELCHE CARRUS","ELCHE SECTOR"],label:"11 ELCHE CARRUS ↔ 14 ELCHE SECTOR",detail:"INCIDENCIA — recorrido exclusivo 11 ↔ 14; servicios incompletos por sentido."},
+{route:"R08",stores:["IBI","ALCOY","ATALAYAS"],label:"30 IBI → ALCOY / 30 IBI → 00 ATALAYAS",detail:"INCIDENCIA — servicio de las 11:25 marcado para comprobación; no se usa en el cálculo activo."},
+{route:"R11",stores:["ATALAYAS","HELLIN"],label:"00 ATALAYAS → 28 HELLIN",detail:"INCIDENCIA — falta el tramo 00 → HELLIN en la fuente."},
+{route:"R12",stores:["VILLARROBLEDO","ALBACETE","ATALAYAS"],label:"19 VILLARROBLEDO",detail:"INCIDENCIA — solo existe comunicación VILLARROBLEDO → ALBACETE → 00; falta el sentido de retorno."},
+{route:"R13",stores:["LA RODA","VILLARROBLEDO","ALBACETE","ATALAYAS"],label:"27 LA RODA",detail:"INCIDENCIA — solo existe LA RODA → VILLARROBLEDO → ALBACETE → 00; falta el sentido de retorno."},
+{route:"R14",stores:["CUENCA","ALBACETE","ATALAYAS"],label:"18 CUENCA",detail:"INCIDENCIA — solo existe CUENCA → ALBACETE → 00; falta el sentido de retorno."},
+{route:"R15",stores:["TARANCON","ALBACETE","ATALAYAS"],label:"20 TARANCON",detail:"INCIDENCIA — solo existe TARANCON → ALBACETE → 00; falta el sentido de retorno."},
+{route:"R16",stores:["DENIA","ONDARA"],label:"26 DENIA ↔ 15 ONDARA",detail:"INCIDENCIA — existe DENIA → ONDARA; falta ONDARA → DENIA."},
+{route:"R10",stores:["CALPE","ONDARA","BENIDORM","ATALAYAS"],label:"21 CALPE → 15 ONDARA / 15 ONDARA → 03 BENIDORM / 03 BENIDORM → 00 ATALAYAS",detail:"INCIDENCIA — los huecos X de la fuente no se incorporan."},
+ {route:"R17",stores:["JAVEA","ONDARA"],label:"25 JÁVEA ↔ 15 ONDARA",detail:"Ruta cerrada exclusivamente entre Jávea y Ondara. La conexión con 00 Atalayas se realiza a través de Ondara."}
 ];
 let origin="",destination="";
 function min(s){let m=String(s).match(/(\d{1,2}):(\d{2})/);return m?+m[1]*60+ +m[2]:null}
@@ -94,32 +95,42 @@ function findEarliest(from,to,start,firstLeg){
 }
 function enumerate(from,to){
   if(from===to)return {same:true,paths:[]};
-  const firsts=LEGS.filter(e=>e[1]===from).sort((a,b)=>min(a[3])-min(b[3]));
+  // Circuito cerrado R17: entre JÁVEA y ONDARA no se permiten desvíos por otras tiendas.
+  // Para 25 JÁVEA → 14 ELCHE SECTOR se usan únicamente los servicios directos documentados.
+  let allowed=LEGS;
+  if((from==='JAVEA'&&to==='ONDARA')||(from==='ONDARA'&&to==='JAVEA')) allowed=LEGS.filter(e=>e[0]==='R17');
+  else if(from==='JAVEA'&&to==='ELCHE SECTOR') allowed=LEGS.filter(e=>e[0]==='R17B'&&e[1]==='JAVEA'&&e[2]==='ELCHE SECTOR');
+  else if(from==='ELCHE SECTOR'&&to==='JAVEA') allowed=LEGS.filter(e=>e[0]==='R17C'&&e[1]==='ELCHE SECTOR'&&e[2]==='JAVEA');
+  const firsts=allowed.filter(e=>e[1]===from).sort((a,b)=>min(a[3])-min(b[3]));
   const byDeparture=new Map();
   for(const f of firsts){
-    const start=min(f[3]);
-    const p=findEarliest(from,to,start,f);
+    const dep=min(f[3]); let arr=min(f[4]);
+    // En rutas directas aprobadas, no buscar cadenas alternativas por otros almacenes.
+    if((f[0]==='R17'||f[0]==='R17B'||f[0]==='R17C')&&f[2]===to){
+      if(arr<dep) arr+=1440;
+      const p={legs:[{store:from,edge:f,dep,arr}],arr};
+      byDeparture.set(dep,p); continue;
+    }
+    const p=findEarliest(from,to,dep,f);
     if(!p)continue;
-    const dep=p.legs[0].dep;
-    const prev=byDeparture.get(dep);
-    // Si dos cadenas parten a la misma hora y llegan igual, conservamos la de menos tramos.
-    if(!prev || p.legs.length<prev.legs.length) byDeparture.set(dep,p);
+    const d=p.legs[0].dep, prev=byDeparture.get(d);
+    if(!prev||p.legs.length<prev.legs.length)byDeparture.set(d,p);
   }
-  const paths=[...byDeparture.values()].sort((a,b)=>a.legs[0].dep-b.legs[0].dep);
-  return {same:false,paths};
+  return {same:false,paths:[...byDeparture.values()].sort((a,b)=>a.legs[0].dep-b.legs[0].dep)};
 }
 function chainText(p){return p.legs.map(x=>fmt(x.dep)+(Math.floor(x.dep/1440)>0?" D/S":"")+" → "+fmt(x.arr)+(Math.floor(x.arr/1440)>0?" D/S":"")).join("  |  ")}
 function routeText(p){return p.legs.map(x=>DISPLAY_NAMES[x.edge[1]]||x.edge[1]).concat(DISPLAY_NAMES[p.legs[p.legs.length-1].edge[2]]||p.legs[p.legs.length-1].edge[2]).join(" → ")}
-function calc(){const out=document.querySelector('#result'); if(!origin||!destination){out.innerHTML='';return} if(origin===destination){out.innerHTML='<div class="result"><div class="big">Mismo almacén.</div><div>No se genera combinación.</div></div>';return}
-  const r=enumerate(origin,destination); if(!r.paths.length){out.innerHTML='<div class="result"><div class="big">🔴 Sin cadena encontrada</div><div class="incident">⚠️ No existe una cadena temporal disponible con los datos V2 cargados.</div></div>';return}
-  let s='<div class="result"><div class="big">🟢 '+DISPLAY_NAMES[origin]+' → '+DISPLAY_NAMES[destination]+'</div><div class="meta">'+r.paths.length+' cadena(s) encontrada(s) a partir de los servicios de origen.</div><div class="steps">';
-  r.paths.forEach((p,i)=>{const first=p.legs[0].edge,last=p.legs[p.legs.length-1].edge; const ds=Math.floor(p.arr/1440)>0?' D/S':''; s+='<div class="step"><b>Viaje '+(i+1)+'</b><div class="chain">'+chainText(p)+'</div><div class="meta">'+routeText(p)+'<br>H.PEDIDO: <b>'+first[5]+'</b> · Llegada: <b>'+fmt(p.arr)+ds+'</b></div></div>'});
+function calc(){const out=document.querySelector('#result'); if(!origin||!destination){out.innerHTML='';return} if(origin===destination){out.innerHTML='<div class="result"><div class="big">Mismo almacén.</div></div>';return}
+  const r=enumerate(origin,destination); if(!r.paths.length){out.innerHTML='<div class="result"><div class="big">🔴 Sin cadena encontrada</div><div class="incident">No hay un servicio directo o una cadena válida con los horarios cargados.</div></div>';return}
+  let s='<div class="result"><div class="big">'+DISPLAY_NAMES[origin]+' → '+DISPLAY_NAMES[destination]+'</div><div class="steps">';
+  r.paths.forEach((p,i)=>{s+='<div class="step"><b>Viaje '+(i+1)+'</b><div class="chain">'+chainText(p)+'</div><div class="meta">'+routeText(p)+' · H. pedido: <b>'+p.legs[0].edge[5]+'</b></div></div>'});
   s+='</div></div>';out.innerHTML=s;
 }
-function buttons(id,type){const box=document.querySelector(id);STORES.forEach(s=>{const b=document.createElement('button');b.type='button';b.dataset.store=s;b.textContent=DISPLAY_NAMES[s]||s;b.onclick=()=>{if(type==='o')origin=s;else destination=s;mark();calc()};box.appendChild(b)})}
+function buttons(id,type){const box=document.querySelector(id);STORES.forEach(s=>{const b=document.createElement('button');b.type='button';b.dataset.store=s;b.textContent=DISPLAY_NAMES[s]||s;b.onclick=()=>{if(type==='o')origin=s;else destination=s;mark();calc();renderIncidents();renderStoreAlerts()};box.appendChild(b)})}
 function mark(){document.querySelectorAll('#orig button').forEach(b=>b.classList.toggle('selected',b.dataset.store===origin));document.querySelectorAll('#dest button').forEach(b=>b.classList.toggle('selected',b.dataset.store===destination))}
 function clock(){const d=new Date();document.querySelector('#clock').textContent=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
-function renderIncidents(){document.querySelector('#incidents').innerHTML=INCIDENTS.map(x=>'<div class="incident-item"><b>'+x.label+'</b><div class="small">'+x.detail+'</div></div>').join('')}
-buttons('#orig','o');buttons('#dest','d');clock();setInterval(clock,1000);renderIncidents();
+function renderIncidents(){const selected=[origin,destination].filter(Boolean);const relevant=INCIDENTS.filter(x=>selected.some(s=>x.stores.includes(s)));document.querySelector('#incidents').innerHTML=relevant.length?relevant.map(x=>'<div class="incident-item"><b>'+x.label+'</b><div class="small">'+x.detail+'</div></div>').join(''):''}
+function renderStoreAlerts(){const selected=[origin,destination].filter(Boolean);const notes=[];if(selected.includes('JAVEA'))notes.push('⚠️ JÁVEA cierra a las 18:00.');document.querySelector('#store-alerts').innerHTML=notes.length?'<div class="warn">'+notes.join('<br>')+'</div>':''}
+buttons('#orig','o');buttons('#dest','d');clock();setInterval(clock,1000);renderIncidents();renderStoreAlerts();
 </script>
 </body></html>
